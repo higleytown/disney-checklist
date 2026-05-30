@@ -118,6 +118,8 @@
   .extras-head{background:var(--burgundy);border-color:var(--burgundy);}
   .extras-head .tally{background:var(--gold-light);color:var(--burgundy);}
   .removed-head{background:#9c8c70;border-color:#9c8c70;}
+  .land-head.collapsible{cursor:pointer;}
+  .land-head .chev{flex:none;font-size:13px;line-height:1;margin-left:2px;}
   .removed-row{justify-content:space-between;cursor:default;}
   .removed-row:active{background:transparent;}
   .removed-row .label{color:#8a795c;}
@@ -269,6 +271,7 @@ let lastSaveOk = backendAvailable ? null : false;
 
 let store = { current:"My Day", slots:{ "My Day":{done:{},star:{},removed:{},custom:[],updated:0} } };
 let filter = "all";
+let removedCollapsed = true;
 function cur(){ return store.slots[store.current]; }
 
 async function readKey(k){
@@ -415,7 +418,7 @@ function buildSection(title, tallyText, opts={}){
   if(tallyText!=null){ const tl=document.createElement("span"); tl.className="tally"; tl.textContent=tallyText; head.appendChild(tl); }
   sec.appendChild(head);
   const body=document.createElement("div"); body.className="land-body"; sec.appendChild(body);
-  return {sec, body};
+  return {sec, body, head};
 }
 
 function render(){
@@ -457,10 +460,16 @@ function render(){
   ex.body.appendChild(add);
   list.appendChild(ex.sec);
 
-  // Removed rides — restore from here
+  // Removed rides — restore from here (collapsible)
   const removedIds=Object.keys(c.removed).filter(id=>c.removed[id]);
   if(removedIds.length){
     const rm=buildSection("Removed", String(removedIds.length), {headCls:"removed-head"});
+    rm.head.classList.add("collapsible");
+    const chev=document.createElement("span"); chev.className="chev";
+    chev.textContent = removedCollapsed ? "▸" : "▾";
+    rm.head.appendChild(chev);
+    rm.head.addEventListener("click", ()=>{ removedCollapsed=!removedCollapsed; render(); });
+    if(removedCollapsed){ rm.body.style.display="none"; }
     removedIds.forEach(id=>{
       const row=document.createElement("div"); row.className="row removed-row";
       const lab=document.createElement("div"); lab.className="label"; lab.textContent=RIDE_NAMES[id]||id;
