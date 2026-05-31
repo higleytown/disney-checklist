@@ -181,7 +181,7 @@
   <div class="filters">
     <button data-filter="all" class="active">All</button>
     <button data-filter="star">★ Must-Do</button>
-    <button data-filter="todo">Unridden</button>
+    <button data-filter="todo">Unfinished</button>
     <button id="editToggle" class="edit-toggle" aria-label="Edit list (remove items)" title="Edit list">✎</button>
   </div>
   <div class="edit-hint" id="editHint">Tap ✕ to remove an item. Bring rides back from “Removed” at the bottom.</div>
@@ -504,7 +504,7 @@ function render(){
     label="Must-Dos Completed"; num=st.filter(id=>c.done[id]).length; denom=st.length;
     barPct=denom?num/denom*100:0;
   }else if(filter==="todo"){
-    label="Left to Ride"; num=total-doneAll; showDenom=false;
+    label="Unfinished Adventures"; num=total-doneAll; showDenom=false;
     barPct=total?doneAll/total*100:0;
   }
   document.getElementById("progLabel").textContent=label;
