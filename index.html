@@ -172,8 +172,8 @@
 
   <div class="progress-card">
     <div class="progress-top">
-      <span>Adventures Completed</span>
-      <span><b id="doneCount">0</b> / <span id="totalCount">0</span></span>
+      <span id="progLabel">Adventures Completed</span>
+      <span><b id="doneCount">0</b><span id="progSlash"> / </span><span id="totalCount">0</span></span>
     </div>
     <div class="bar"><span id="barFill"></span></div>
   </div>
@@ -361,6 +361,22 @@ function effectiveItems(){
   return ride.concat(cust);
 }
 
+// Section header tally, matching the main counter's filter logic.
+// Returns null when there's nothing to show for the current filter.
+function tallyText(ids){
+  const c=cur();
+  if(filter==="star"){
+    const st=ids.filter(id=>c.star[id]);
+    return st.length ? (st.filter(id=>c.done[id]).length+"/"+st.length) : null;
+  }
+  if(filter==="todo"){
+    const rem=ids.filter(id=>!c.done[id]).length;
+    return rem ? String(rem) : null;
+  }
+  const dn=ids.filter(id=>c.done[id]).length;
+  return ids.length ? (dn+"/"+ids.length) : null;
+}
+
 function makeRow(id,name,type){
   const c=cur();
   const row=document.createElement("div");
@@ -404,7 +420,9 @@ function openAddItem(){
     okLabel:"Add", onConfirm:(name)=>{
       if(!name){ modalError("Type something to add."); return false; }
       const c=cur(); c.custom=c.custom||[];
-      c.custom.push({id:"c"+Date.now()+Math.floor(Math.random()*1000), name});
+      const id="c"+Date.now()+Math.floor(Math.random()*1000);
+      c.custom.push({id, name});
+      c.star[id]=true;   // custom items are Must-Do by default
       persist(); render();
     }});
 }
@@ -436,8 +454,7 @@ function render(){
       return true;
     });
     if(shown.length===0) return;
-    const doneInLand=present.filter(([id])=>c.done[id]).length;
-    const {sec,body}=buildSection(land, doneInLand+"/"+present.length);
+    const {sec,body}=buildSection(land, tallyText(present.map(([id])=>id)));
     shown.forEach(([id,name])=> body.appendChild(makeRow(id,name,"ride")));
     list.appendChild(sec);
   });
@@ -449,8 +466,7 @@ function render(){
     if(filter==="todo") return !c.done[it.id];
     return true;
   });
-  const customDone=customAll.filter(it=>c.done[it.id]).length;
-  const ex=buildSection("Extras · Food & Shows", customAll.length?(customDone+"/"+customAll.length):null, {headCls:"extras-head"});
+  const ex=buildSection("Extras · Food & Shows", tallyText(customAll.map(it=>it.id)), {headCls:"extras-head"});
   customShown.forEach(it=> ex.body.appendChild(makeRow(it.id, it.name, "custom")));
   const add=document.createElement("div");
   add.className="row add-row";
@@ -481,10 +497,22 @@ function render(){
     list.appendChild(rm.sec);
   }
 
-  const eff=effectiveItems(), total=eff.length, done=eff.filter(id=>c.done[id]).length;
-  document.getElementById("doneCount").textContent=done;
-  document.getElementById("totalCount").textContent=total;
-  document.getElementById("barFill").style.width=(total?(done/total*100):0)+"%";
+  const eff=effectiveItems(), total=eff.length, doneAll=eff.filter(id=>c.done[id]).length;
+  let label="Adventures Completed", num=doneAll, denom=total, showDenom=true, barPct=total?doneAll/total*100:0;
+  if(filter==="star"){
+    const st=eff.filter(id=>c.star[id]);
+    label="Must-Dos Completed"; num=st.filter(id=>c.done[id]).length; denom=st.length;
+    barPct=denom?num/denom*100:0;
+  }else if(filter==="todo"){
+    label="Left to Ride"; num=total-doneAll; showDenom=false;
+    barPct=total?doneAll/total*100:0;
+  }
+  document.getElementById("progLabel").textContent=label;
+  document.getElementById("doneCount").textContent=num;
+  document.getElementById("totalCount").textContent=denom;
+  document.getElementById("progSlash").style.display=showDenom?"":"none";
+  document.getElementById("totalCount").style.display=showDenom?"":"none";
+  document.getElementById("barFill").style.width=barPct+"%";
 }
 
 function refreshSlotSelect(){
